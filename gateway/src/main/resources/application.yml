@@ -1,0 +1,43 @@
+server:
+  port: 8080 # Puerto de entrada unificado para todos los microservicios
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      # Descubrimiento automático en Eureka
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+
+      # Rutas específicas para cada microservicio del sistema de hoteles
+      routes:
+        - id: reservas-service
+          uri: lb://RESERVAS-SERVICE
+          predicates:
+            - Path=/api/reservas/**
+
+        - id: habitaciones-service
+          uri: lb://HABITACIONES-SERVICE
+          predicates:
+            - Path=/api/habitaciones/**
+
+        - id: huespedes-service
+          uri: lb://HUESPEDES-SERVICE
+          predicates:
+            - Path=/api/huespedes/**
+
+        - id: authorization-service
+          uri: lb://AUTHORIZATION-SERVICE
+          predicates:
+            - Path=/api/auth/**
+
+# Conexión al servidor Eureka
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
