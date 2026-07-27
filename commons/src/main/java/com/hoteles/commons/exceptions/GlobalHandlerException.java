@@ -1,6 +1,6 @@
 package com.hoteles.commons.exceptions;
 
-import com.hoteles.commons.dto.error.CustomErrorResponse;
+import com.hoteles.commons.dto.CustomErrorResponse;
 import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

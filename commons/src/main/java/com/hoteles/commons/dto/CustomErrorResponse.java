@@ -1,4 +1,4 @@
-package com.hoteles.commons.dto.error;
+package com.hoteles.commons.dto;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
