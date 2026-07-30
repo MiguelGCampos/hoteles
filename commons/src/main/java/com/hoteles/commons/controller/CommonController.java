@@ -1,17 +1,19 @@
 package com.hoteles.commons.controller;
 
 import com.hoteles.commons.service.CrudService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
+import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@AllArgsConstructor
+@Validated
+public abstract class CommonController<RQ, RS, S extends CrudService<RQ, RS>> {
 
-public abstract class CommonController<RQ, RS, S extends CrudService<RQ, RS, ID>, ID> {
-
-    @Autowired
     protected S service;
 
     @GetMapping
@@ -20,23 +22,29 @@ public abstract class CommonController<RQ, RS, S extends CrudService<RQ, RS, ID>
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<RS> obtenerPorId(@PathVariable ID id) {
+    public ResponseEntity<RS> obtenerPorId(
+            @PathVariable @Positive(message = "La id debe ser positiva") Long id
+    ){
         return ResponseEntity.ok(service.obtenerPorId(id));
     }
 
     @PostMapping
-    public ResponseEntity<RS> registrar(@RequestBody RQ request) {
-        RS response = service.registrar(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<RS> registrar(
+            @Valid @RequestBody RQ request
+    ){
+        return ResponseEntity.ok(service.registrar(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<RS> actualizar(@RequestBody RQ request, @PathVariable ID id) {
+    public ResponseEntity<RS> actualizar(
+            @Valid @RequestBody RQ request,
+            @PathVariable @Positive(message = "La id debe ser positiva") Long id){
         return ResponseEntity.ok(service.actualizar(request, id));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable ID id) {
+    public ResponseEntity<Void> eliminar(
+            @PathVariable @Positive(message = "La id debe ser positiva") Long id){
         service.eliminar(id);
         return ResponseEntity.noContent().build();
     }

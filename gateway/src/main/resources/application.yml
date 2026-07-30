@@ -1,18 +1,18 @@
 server:
-  port: 8080 # Puerto de entrada unificado para todos los microservicios
+  port: 8090 # Puerto de entrada unificado para todos los microservicios
 
 spring:
   application:
     name: gateway-service
   cloud:
     gateway:
-      # Descubrimiento automático en Eureka
+      # Descubrimiento automï¿½tico en Eureka
       discovery:
         locator:
           enabled: true
           lower-case-service-id: true
 
-      # Rutas específicas para cada microservicio del sistema de hoteles
+      # Rutas especï¿½ficas para cada microservicio del sistema de hoteles
       routes:
         - id: reservas-service
           uri: lb://RESERVAS-SERVICE
@@ -34,7 +34,7 @@ spring:
           predicates:
             - Path=/api/auth/**
 
-# Conexión al servidor Eureka
+# Conexiï¿½n al servidor Eureka
 eureka:
   client:
     service-url:
