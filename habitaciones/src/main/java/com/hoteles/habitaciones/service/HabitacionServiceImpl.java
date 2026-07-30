@@ -4,6 +4,7 @@ import com.hoteles.commons.dto.habitaciones.HabitacionRequest;
 import com.hoteles.commons.dto.habitaciones.HabitacionResponse;
 import com.hoteles.commons.enums.EstadoHabitacion;
 import com.hoteles.commons.enums.EstadoRegistro;
+import com.hoteles.commons.enums.TipoHabitacion;
 import com.hoteles.commons.exceptions.RecursoNoEncontradoException;
 import com.hoteles.habitaciones.enitty.Habitacion;
 import com.hoteles.habitaciones.mapper.HabitacionMapper;
@@ -85,18 +86,19 @@ public class HabitacionServiceImpl implements HabitacionService{
         Habitacion habitacion = obtenerHabitacionActivaOException(id);
         log.info("Actualizando Habitación con id: {}", id);
 
-        //medicoTieneCitasAsignadas(id);
-
         validarCambiosUnicos(request, habitacion);
 
         habitacion.actualizar(
                 request.numero(),
-                request.tipo(),
+                TipoHabitacion.obtenerTipoHabitacionPorCodigo(request.tipoCodigo()),
                 request.precio(),
-                request.capacidad();
-                //EstadoHabitacion.obtenerEstadoPorCodigo(request.()));
+                request.capacidad(),
+                habitacion.getEstadoHabitacion()
+        );
 
-        log.info("Habitación actualizado con éxito: {}", id);
+        habitacionRepository.save(habitacion);
+
+        log.info("Habitación actualizada con éxito: {}", id);
 
         return habitacionMapper.entidadAResponse(habitacion);
     }

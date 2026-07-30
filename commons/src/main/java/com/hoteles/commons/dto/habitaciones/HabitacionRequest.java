@@ -1,5 +1,6 @@
 package com.hoteles.commons.dto.habitaciones;
 
+import com.hoteles.commons.enums.TipoHabitacion;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
@@ -9,8 +10,9 @@ public record HabitacionRequest(
         @Positive(message = "El número debe ser positivo.")
         Integer numero,
 
-        @NotBlank(message = "El tipo es requerido.")
-        String tipo,
+        @NotNull(message = "El código de tipo de habitación es requerido.")
+        @Positive(message = "El código debe ser positivo.")
+        Long tipoCodigo,
 
         @NotNull(message = "El precio es requerido")
         @Positive(message = "El precio debe ser positivo")

@@ -2,7 +2,7 @@ package com.hoteles.habitaciones.enitty;
 
 import com.hoteles.commons.enums.EstadoHabitacion;
 import com.hoteles.commons.enums.EstadoRegistro;
-import com.hoteles.commons.utils.StringCustomUtils;
+import com.hoteles.commons.enums.TipoHabitacion;
 import com.hoteles.commons.utils.ValoresNumericosUtils;
 import jakarta.persistence.*;
 import lombok.*;
@@ -26,8 +26,9 @@ public class Habitacion {
     @Column(name = "NUM_HABITACION")
     private Integer numeroHabitacion;
 
-    @Column(name = "TIPO_HABITACION")
-    private String tipoHabitacion;
+    @Enumerated(EnumType.STRING) // guarda el nombre del enum en la BD
+    @Column(name = "TIPO_HABITACION", nullable = false)
+    private TipoHabitacion tipoHabitacion;
 
     @Column(name = "PRECIO")
     private BigDecimal precio;
@@ -44,7 +45,7 @@ public class Habitacion {
     private EstadoRegistro estadoRegistro;
 
     public void actualizar(
-            Integer numeroHabitacion, String tipoHabitacion, BigDecimal precio, Integer capacidad,
+            Integer numeroHabitacion, TipoHabitacion tipoHabitacion, BigDecimal precio, Integer capacidad,
             EstadoHabitacion estadoHabitacion) {
 
         validarNoEliminado();
@@ -53,44 +54,40 @@ public class Habitacion {
                 numeroHabitacion, tipoHabitacion, precio, capacidad, estadoHabitacion);
 
         this.numeroHabitacion = numeroHabitacion;
-        this.tipoHabitacion = tipoHabitacion.trim();
+        this.tipoHabitacion = tipoHabitacion;
         this.precio = precio;
         this.capacidad = capacidad;
         this.estadoHabitacion = estadoHabitacion;
-
     }
 
     private void validarNoEliminado() {
-
         if (this.estadoRegistro == EstadoRegistro.ELIMINADO)
             throw new IllegalStateException("La habitación ya está eliminada");
     }
 
-
     public void eliminar() {
-
         validarNoEliminado();
-
         this.estadoRegistro = EstadoRegistro.ELIMINADO;
     }
 
+    // 🔹 Ahora valida TipoHabitacion en lugar de String
     private void validarDatos(
-            Integer numeroHabitacion, String tipoHabitacion, BigDecimal precio, Integer capacidad,
+            Integer numeroHabitacion, TipoHabitacion tipoHabitacion, BigDecimal precio, Integer capacidad,
             EstadoHabitacion estadoHabitacion) {
 
         ValoresNumericosUtils.validarEnteroPositivo(numeroHabitacion,
                 "El número de la habitación es requerido y debe ser positivo");
 
-        StringCustomUtils.validarTamanio(tipoHabitacion, 1, 50,
-                "El tipo de la habitación es requerido y debe contener entre 1 y 50 caracteres");
+        if (tipoHabitacion == null)
+            throw new IllegalArgumentException("El tipo de la habitación es requerido");
 
         ValoresNumericosUtils.validarBigDecimalPositivo(precio,
                 "El precio es requerido y debe ser positivo");
 
         ValoresNumericosUtils.validarRangoIntegerMinimo(capacidad, 1,
-                "La capacidad es requerida y debe valer minimo 1");
+                "La capacidad es requerida y debe valer mínimo 1");
 
         if (estadoHabitacion == null)
-            throw new IllegalArgumentException("El estado de la habitación es requerida");
+            throw new IllegalArgumentException("El estado de la habitación es requerido");
     }
 }
