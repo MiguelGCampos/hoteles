@@ -2,7 +2,10 @@ package com.hoteles.habitaciones.service;
 
 import com.hoteles.commons.dto.habitaciones.HabitacionRequest;
 import com.hoteles.commons.dto.habitaciones.HabitacionResponse;
+import com.hoteles.commons.enums.EstadoHabitacion;
+import com.hoteles.commons.enums.EstadoRegistro;
 import com.hoteles.commons.exceptions.RecursoNoEncontradoException;
+import com.hoteles.habitaciones.enitty.Habitacion;
 import com.hoteles.habitaciones.mapper.HabitacionMapper;
 import com.hoteles.habitaciones.repository.HabitacionRepository;
 import lombok.AllArgsConstructor;
@@ -21,6 +24,7 @@ public class HabitacionServiceImpl implements HabitacionService{
     private final HabitacionMapper habitacionMapper;
 
     @Override
+    @Transactional(readOnly = true)
     public HabitacionResponse obtenerHabitacionPorIdSinEstado(Long id) {
         log.info("Buscando médico sin estado con id {}", id);
 
@@ -30,27 +34,112 @@ public class HabitacionServiceImpl implements HabitacionService{
     }
 
     @Override
-    public List<HabitacionResponse> listar() {
-        return List.of();
+    public void actualizarEstadoHabitacion(Long idHabitacion, Long idEstadoHabitacion) {
+        Habitacion habitacion = obtenerHabitacionActivaOException(idHabitacion);
+
+        EstadoHabitacion nuevoEstado = EstadoHabitacion.
+                obtenerEstadoPorCodigo(idEstadoHabitacion);
+
+        if (habitacion.getEstadoHabitacion() == nuevoEstado) return;
+
+        EstadoHabitacion anteriorEstado = habitacion.getEstadoHabitacion();
+
+        habitacion.setEstadoHabitacion(nuevoEstado);
+
+        log.info("Disponibilidad del médico con id {} cambió de {} a {}",
+                idHabitacion, anteriorEstado, nuevoEstado);
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<HabitacionResponse> listar() {
+        log.info("Listado de todos las habitaciones activos solicitado");
+        return habitacionRepository.findByEstadoRegistro(EstadoRegistro.ACTIVO).stream()
+                .map(habitacionMapper::entidadAResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public HabitacionResponse obtenerPorId(Long id) {
-        return null;
+        return habitacionMapper.entidadAResponse(obtenerHabitacionActivaOException(id));
     }
 
     @Override
     public HabitacionResponse registrar(HabitacionRequest request) {
-        return null;
+        log.info("Registrando nueva habitación");
+
+        validarNumeroUnico(request.numero());
+
+        Habitacion habitacion = habitacionMapper.requestAEntidad(request);
+
+        habitacion.setEstadoHabitacion(EstadoHabitacion.DISPONIBLE);
+
+        habitacionRepository.save(habitacion);
+
+        log.info("Médico registrado con éxito: {}", habitacion.getNumeroHabitacion());
+        return habitacionMapper.entidadAResponse(habitacion);
     }
 
     @Override
     public HabitacionResponse actualizar(HabitacionRequest request, Long id) {
-        return null;
+        Habitacion habitacion = obtenerHabitacionActivaOException(id);
+        log.info("Actualizando Habitación con id: {}", id);
+
+        //medicoTieneCitasAsignadas(id);
+
+        validarCambiosUnicos(request, habitacion);
+
+        habitacion.actualizar(
+                request.numero(),
+                request.tipo(),
+                request.precio(),
+                request.capacidad();
+                //EstadoHabitacion.obtenerEstadoPorCodigo(request.()));
+
+        log.info("Habitación actualizado con éxito: {}", id);
+
+        return habitacionMapper.entidadAResponse(habitacion);
     }
 
     @Override
     public void eliminar(Long id) {
+        Habitacion habitacion = obtenerHabitacionActivaOException(id);
+        log.info("Eliminando Médico con id: {}", id);
 
+        //medicoTieneCitasAsignadas(id);
+
+        habitacion.eliminar();
+        log.info("Médico con id {} ha sido eliminado", id);
     }
+
+    private Habitacion obtenerHabitacionActivaOException(Long id) {
+        log.info("Buscando Habitación con estado {} con id: {}", EstadoRegistro.ACTIVO, id);
+        return habitacionRepository.findByIdAndEstadoRegistro(id, EstadoRegistro.ACTIVO).orElseThrow(() ->
+                new RecursoNoEncontradoException("Habitación activa no encontrado con el id: " + id));
+    }
+
+    private void validarNumeroUnico(Integer numeroHabitacion) {
+        if (habitacionRepository.existsByNumeroHabitacionIgnoreCaseAndEstadoRegistro(
+                numeroHabitacion, EstadoRegistro.ACTIVO)) {
+
+            throw new IllegalArgumentException(
+                    "Ya existe una Habitación registrada con el numero: " + numeroHabitacion);
+        }
+    }
+
+    private void validarCambiosUnicos(HabitacionRequest request, Habitacion habitacion) {
+
+        if (!habitacion.getNumeroHabitacion().equals(request.numero()) &&
+                habitacionRepository.existsByNumeroHabitacionIgnoreCaseAndEstadoRegistro(
+                        request.numero(), EstadoRegistro.ACTIVO)) {
+
+            throw new IllegalArgumentException(
+                    "Ya existe un Habitación registrado con el numero: " + request.numero());
+        }
+    }
+
+    /*private void medicoTieneCitasAsignadas(Long id) {
+        citaClient.medicoTieneCitasAsignadas(id);
+    }*/
+
 }
