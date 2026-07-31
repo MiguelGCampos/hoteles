@@ -1,10 +1,10 @@
 package com.hoteles.habitaciones.service;
 
+
 import com.hoteles.commons.dto.habitaciones.HabitacionRequest;
 import com.hoteles.commons.dto.habitaciones.HabitacionResponse;
 import com.hoteles.commons.enums.EstadoHabitacion;
 import com.hoteles.commons.enums.EstadoRegistro;
-import com.hoteles.commons.enums.TipoHabitacion;
 import com.hoteles.commons.exceptions.RecursoNoEncontradoException;
 import com.hoteles.habitaciones.enitty.Habitacion;
 import com.hoteles.habitaciones.mapper.HabitacionMapper;
@@ -17,44 +17,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
-@Slf4j
-@Transactional
 @AllArgsConstructor
-public class HabitacionServiceImpl implements HabitacionService{
+@Transactional
+@Slf4j
+public class HabitacionServiceImpl implements HabitacionService {
+
     private final HabitacionRepository habitacionRepository;
     private final HabitacionMapper habitacionMapper;
 
     @Override
     @Transactional(readOnly = true)
-    public HabitacionResponse obtenerHabitacionPorIdSinEstado(Long id) {
-        log.info("Buscando médico sin estado con id {}", id);
-
-        return habitacionMapper.entidadAResponse(habitacionRepository.findById(id)
-                .orElseThrow(()->new RecursoNoEncontradoException(
-                        "Medico sin estado no encontrado con id: {}"+id)));
-    }
-
-    @Override
-    public void actualizarEstadoHabitacion(Long idHabitacion, Long idEstadoHabitacion) {
-        Habitacion habitacion = obtenerHabitacionActivaOException(idHabitacion);
-
-        EstadoHabitacion nuevoEstado = EstadoHabitacion.
-                obtenerEstadoPorCodigo(idEstadoHabitacion);
-
-        if (habitacion.getEstadoHabitacion() == nuevoEstado) return;
-
-        EstadoHabitacion anteriorEstado = habitacion.getEstadoHabitacion();
-
-        habitacion.setEstadoHabitacion(nuevoEstado);
-
-        log.info("Disponibilidad del médico con id {} cambió de {} a {}",
-                idHabitacion, anteriorEstado, nuevoEstado);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<HabitacionResponse> listar() {
-        log.info("Listado de todos las habitaciones activos solicitado");
+        log.info("Listando habitaciones activas...");
         return habitacionRepository.findByEstadoRegistro(EstadoRegistro.ACTIVO).stream()
                 .map(habitacionMapper::entidadAResponse).toList();
     }
@@ -62,86 +36,114 @@ public class HabitacionServiceImpl implements HabitacionService{
     @Override
     @Transactional(readOnly = true)
     public HabitacionResponse obtenerPorId(Long id) {
-        return habitacionMapper.entidadAResponse(obtenerHabitacionActivaOException(id));
+        log.info("Buscando habitación activa con id {}", id);
+        return habitacionMapper.entidadAResponse(obtenerActivaOException(id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public HabitacionResponse obtenerHabitacionPorIdSinEstado(Long id) {
+        log.info("Buscando habitación sin filtro de estado con id {}", id);
+        return habitacionMapper.entidadAResponse(habitacionRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Habitación no encontrada con id " + id)));
+    }
+
+    @Override
+    public void actualizarEstadoHabitacion(Long idHabitacion, Long idEstadoHabitacion) {
+        Habitacion habitacion = obtenerActivaOException(idHabitacion);
+
+        log.info("Cambiando estado de la habitación con id {}", idHabitacion);
+
+        EstadoHabitacion nuevoEstado = EstadoHabitacion.obtenerEstadoPorCodigo(idEstadoHabitacion);
+
+        habitacion.cambiarEstado(nuevoEstado);
+
+        log.info("Estado de la habitación {} actualizado a {}", idHabitacion, nuevoEstado);
     }
 
     @Override
     public HabitacionResponse registrar(HabitacionRequest request) {
-        log.info("Registrando nueva habitación");
+        log.info("Registrando nueva habitación número {}", request.numero());
 
-        validarNumeroUnico(request.numero());
+        validarNumeroUnico(request.numero(), null);
 
         Habitacion habitacion = habitacionMapper.requestAEntidad(request);
 
-        habitacion.setEstadoHabitacion(EstadoHabitacion.DISPONIBLE);
-
         habitacionRepository.save(habitacion);
 
-        log.info("Médico registrado con éxito: {}", habitacion.getNumeroHabitacion());
+        log.info("Habitación registrada con éxito: {}", habitacion.getNumeroHabitacion());
+
         return habitacionMapper.entidadAResponse(habitacion);
     }
 
     @Override
     public HabitacionResponse actualizar(HabitacionRequest request, Long id) {
-        Habitacion habitacion = obtenerHabitacionActivaOException(id);
-        log.info("Actualizando Habitación con id: {}", id);
+        Habitacion habitacion = obtenerActivaOException(id);
 
-        validarCambiosUnicos(request, habitacion);
+        log.info("Actualizando habitación con id: {}", id);
 
-        habitacion.actualizar(
-                request.numero(),
-                TipoHabitacion.obtenerTipoHabitacionPorCodigo(request.tipoCodigo()),
-                request.precio(),
-                request.capacidad(),
-                habitacion.getEstadoHabitacion()
-        );
+        validarNumeroUnico(request.numero(), id);
 
-        habitacionRepository.save(habitacion);
+        habitacion.actualizar(request.numero(), request.tipo(), request.precio(), request.capacidad());
 
-        log.info("Habitación actualizada con éxito: {}", id);
+        log.info("Habitación actualizada con éxito: {}", habitacion.getNumeroHabitacion());
 
         return habitacionMapper.entidadAResponse(habitacion);
     }
 
     @Override
     public void eliminar(Long id) {
-        Habitacion habitacion = obtenerHabitacionActivaOException(id);
-        log.info("Eliminando Médico con id: {}", id);
+        Habitacion habitacion = obtenerActivaOException(id);
 
-        //medicoTieneCitasAsignadas(id);
+        log.info("Eliminando habitación con id {}", id);
 
         habitacion.eliminar();
-        log.info("Médico con id {} ha sido eliminado", id);
+
+        log.info("Habitación con id {} ha sido eliminada", id);
     }
 
-    private Habitacion obtenerHabitacionActivaOException(Long id) {
-        log.info("Buscando Habitación con estado {} con id: {}", EstadoRegistro.ACTIVO, id);
-        return habitacionRepository.findByIdAndEstadoRegistro(id, EstadoRegistro.ACTIVO).orElseThrow(() ->
-                new RecursoNoEncontradoException("Habitación activa no encontrado con el id: " + id));
+
+    @Transactional(readOnly = true)
+    @Override
+    public HabitacionResponse obtenerHabitacionActivaDisponiblePorId(Long id) {
+        log.info("Buscando habitación activa y disponible con id {}", id);
+
+        Habitacion habitacion = habitacionRepository.findByIdAndEstadoRegistro(id, EstadoRegistro.ACTIVO)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Habitación activa no encontrada con id " + id));
+
+        if (habitacion.getEstadoHabitacion() != EstadoHabitacion.DISPONIBLE) {
+            throw new IllegalStateException("La habitación con id " + id + " no está disponible actualmente");
+        }
+
+        return habitacionMapper.entidadAResponse(habitacion);
     }
 
-    private void validarNumeroUnico(Integer numeroHabitacion) {
-        if (habitacionRepository.existsByNumeroHabitacionIgnoreCaseAndEstadoRegistro(
-                numeroHabitacion, EstadoRegistro.ACTIVO)) {
+    @Override
+    public void sincronizarEstado(Long id, Long idEstado) {
+        Habitacion habitacion = obtenerActivaOException(id);
 
-            throw new IllegalArgumentException(
-                    "Ya existe una Habitación registrada con el numero: " + numeroHabitacion);
+        EstadoHabitacion nuevoEstado = EstadoHabitacion.obtenerEstadoPorCodigo(idEstado);
+
+        log.info("Sincronizando estado de la habitación {} a {} (disparado por Reservas)", id, nuevoEstado);
+
+        habitacion.sincronizarEstado(nuevoEstado);
+    }
+
+    private Habitacion obtenerActivaOException(Long id) {
+        return habitacionRepository.findByIdAndEstadoRegistro(id, EstadoRegistro.ACTIVO)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Habitación activa no encontrada con id " + id));
+    }
+
+    private void validarNumeroUnico(Integer numero, Long idExcluir) {
+        log.info("Validando número de habitación único...");
+
+        boolean existe = (idExcluir == null)
+                ? habitacionRepository.existsByNumeroAndEstadoRegistro(numero, EstadoRegistro.ACTIVO)
+                : habitacionRepository.existsByNumeroAndEstadoRegistroAndIdNot(numero, EstadoRegistro.ACTIVO, idExcluir);
+
+        if (existe) {
+            throw new IllegalArgumentException("Ya existe una habitación activa registrada con el número: " + numero);
         }
     }
-
-    private void validarCambiosUnicos(HabitacionRequest request, Habitacion habitacion) {
-
-        if (!habitacion.getNumeroHabitacion().equals(request.numero()) &&
-                habitacionRepository.existsByNumeroHabitacionIgnoreCaseAndEstadoRegistro(
-                        request.numero(), EstadoRegistro.ACTIVO)) {
-
-            throw new IllegalArgumentException(
-                    "Ya existe un Habitación registrado con el numero: " + request.numero());
-        }
-    }
-
-    /*private void medicoTieneCitasAsignadas(Long id) {
-        citaClient.medicoTieneCitasAsignadas(id);
-    }*/
 
 }

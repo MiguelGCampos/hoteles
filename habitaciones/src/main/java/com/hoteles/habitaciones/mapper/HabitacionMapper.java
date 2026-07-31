@@ -32,8 +32,8 @@ public class HabitacionMapper implements CommonMapper<HabitacionRequest, Habitac
 
         return new HabitacionResponse(
                 entidad.getId(),
-                entidad.getNumeroHabitacion(),
-                entidad.getTipoHabitacion().getDescripcion(),
+                entidad.getNumeroHabitacion(),// ✅ código del tipo
+                entidad.getTipoHabitacion().getDescripcion(), // ✅ descripción del tipo
                 entidad.getPrecio(),
                 entidad.getCapacidad(),
                 entidad.getEstadoHabitacion().getDescripcion()

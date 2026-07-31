@@ -1,8 +1,8 @@
 package com.hoteles.authorization.controllers;
 
-import com.miguel.authorization.dto.UsuarioRequest;
-import com.miguel.authorization.dto.UsuarioResponse;
-import com.miguel.authorization.services.UsuarioService;
+import com.hoteles.authorization.dto.UsuarioRequest;
+import com.hoteles.authorization.dto.UsuarioResponse;
+import com.hoteles.authorization.services.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
