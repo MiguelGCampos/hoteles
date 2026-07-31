@@ -1,8 +1,8 @@
 package com.hoteles.reservas.repositories;
 
 import com.hoteles.commons.enums.EstadoRegistro;
+import com.hoteles.commons.enums.EstadoReserva;
 import com.hoteles.reservas.entities.Reserva;
-import com.hoteles.reservas.enums.EstadoReserva;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
