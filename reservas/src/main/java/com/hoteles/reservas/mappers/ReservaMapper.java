@@ -59,10 +59,9 @@ public class ReservaMapper implements CommonMapper<ReservaRequest, ReservaRespon
     private DatosHuesped huespedResponseADatosHuesped(HuespedResponse huesped) {
         if (huesped == null) return null;
 
-        // Concatenamos nombre y apellido paterno para el nombre completo en el DTO incrustado
+
         String nombreCompleto = huesped.nombre() + " " + huesped.apellidoPaterno();
 
-        // Convertimos el Enum TipoDocumento a String
         String tipoDoc = huesped.tipoDocumento() != null ? huesped.tipoDocumento().name() : null;
 
         return new DatosHuesped(
