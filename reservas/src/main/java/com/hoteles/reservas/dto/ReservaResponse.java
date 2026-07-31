@@ -11,6 +11,7 @@ public record ReservaResponse(
         HabitacionResponse habitacion,
         LocalDate fechaEntrada,
         LocalDate fechaSalida,
-        String estadoReserva
+        String estadoReserva,
+        String estadoRegistro
 ) {
 }

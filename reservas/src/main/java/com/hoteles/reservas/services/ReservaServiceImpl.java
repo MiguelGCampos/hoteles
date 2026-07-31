@@ -4,6 +4,7 @@ import com.hoteles.commons.dto.habitaciones.HabitacionResponse;
 import com.hoteles.commons.dto.huespedes.HuespedResponse;
 import com.hoteles.commons.enums.EstadoHabitacion;
 import com.hoteles.commons.enums.EstadoRegistro;
+import com.hoteles.commons.enums.EstadoReserva;
 import com.hoteles.commons.exceptions.RecursoNoEncontradoException;
 import com.hoteles.commons.exceptions.ReglaNegocioException;
 import com.hoteles.reservas.clients.HabitacionClient;
@@ -11,7 +12,6 @@ import com.hoteles.reservas.clients.HuespedClient;
 import com.hoteles.reservas.dto.ReservaRequest;
 import com.hoteles.reservas.dto.ReservaResponse;
 import com.hoteles.reservas.entities.Reserva;
-import com.hoteles.reservas.enums.EstadoReserva;
 import com.hoteles.reservas.mappers.ReservaMapper;
 import com.hoteles.reservas.repositories.ReservaRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +37,7 @@ public class ReservaServiceImpl implements ReservaService {
         // Validaciones de negocio
         validarFechas(request.fechaEntrada(), request.fechaSalida());
         HuespedResponse huesped = huespedClient.obtenerHuespedPorIdSinEstado(request.idHuesped());
-        if (huesped.estado() != EstadoRegistro.ACTIVO) {
+        if (huesped.estadoRegistro() != EstadoRegistro.ACTIVO) {
             throw new ReglaNegocioException("El huésped con ID " + request.idHuesped() + " no está activo.");
         }
         HabitacionResponse habitacion = habitacionClient.obtenerHabitacionPorIdSinEstado(request.idHabitacion());
@@ -46,7 +46,7 @@ public class ReservaServiceImpl implements ReservaService {
         }
 
         // Creación y persistencia
-        Reserva reserva = reservaMapper.toEntity(request);
+        Reserva reserva = reservaMapper.requestAEntidad(request);
         reserva.setEstadoReserva(EstadoReserva.CONFIRMADA);
         reserva.setEstadoRegistro(EstadoRegistro.ACTIVO);
         Reserva reservaGuardada = reservaRepository.save(reserva);
@@ -54,7 +54,7 @@ public class ReservaServiceImpl implements ReservaService {
         // Sincronización de estado con el microservicio de habitaciones
         habitacionClient.actualizarEstadoHabitacion(habitacion.id(), EstadoHabitacion.OCUPADA.getCodigo());
 
-        return reservaMapper.toResponse(reservaGuardada, huesped, habitacion);
+        return reservaMapper.entidadAResponse(reservaGuardada, huesped, habitacion);
     }
 
     @Override
@@ -81,14 +81,14 @@ public class ReservaServiceImpl implements ReservaService {
         Reserva reservaActualizada = reservaRepository.save(reserva);
         HuespedResponse huesped = huespedClient.obtenerHuespedPorIdSinEstado(reservaActualizada.getIdHuesped());
         HabitacionResponse habitacion = habitacionClient.obtenerHabitacionPorIdSinEstado(reservaActualizada.getIdHabitacion());
-        return reservaMapper.toResponse(reservaActualizada, huesped, habitacion);
+        return reservaMapper.entidadAResponse(reservaActualizada, huesped, habitacion);
     }
 
     @Override
     @Transactional
     public void actualizarEstado(Long idReserva, Long idEstado) {
         Reserva reserva = findReservaActivaById(idReserva);
-        EstadoReserva nuevoEstado = EstadoReserva.obtenerEstadoReservaPorCodigo(idEstado);
+        EstadoReserva nuevoEstado = EstadoReserva.obtenerEstadoCitaPorCodigo(idEstado);
 
         if (!reserva.getEstadoReserva().puedeCambiarA(nuevoEstado)) {
             throw new ReglaNegocioException("No se puede cambiar el estado de " + reserva.getEstadoReserva() + " a " + nuevoEstado);
@@ -149,7 +149,7 @@ public class ReservaServiceImpl implements ReservaService {
     private ReservaResponse buildResponse(Reserva reserva) {
         HuespedResponse huesped = huespedClient.obtenerHuespedPorIdSinEstado(reserva.getIdHuesped());
         HabitacionResponse habitacion = habitacionClient.obtenerHabitacionPorIdSinEstado(reserva.getIdHabitacion());
-        return reservaMapper.toResponse(reserva, huesped, habitacion);
+        return reservaMapper.entidadAResponse(reserva, huesped, habitacion);
     }
 
     private void validarFechas(LocalDate fechaEntrada, LocalDate fechaSalida) {

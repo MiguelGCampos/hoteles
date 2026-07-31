@@ -52,7 +52,8 @@ public class ReservaController {
     }
 
 
-    @GetMapping("/huesped/{huespedId}/en-curso")
+    // Consumido por el microservicio de huéspedes vía commons.ReservaClient.
+    @GetMapping("/huesped/{huespedId}/tiene-reservas-bloqueantes")
     public ResponseEntity<Boolean> huespedTieneReservasEnCurso(@PathVariable Long huespedId) {
         return ResponseEntity.ok(reservaService.huespedTieneReservasEnCurso(huespedId));
     }
